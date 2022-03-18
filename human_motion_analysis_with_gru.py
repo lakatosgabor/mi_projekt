@@ -8,6 +8,7 @@ from torch import Tensor
 from torch.nn import Parameter
 from torch.autograd import Variable
 
+
 use_cuda = torch.cuda.is_available()
 
 class SelfAttentiveEncoder(nn.Module):
@@ -33,7 +34,7 @@ class SelfAttentiveEncoder(nn.Module):
         hbar = self.tanh(self.ws1(self.drop(compressed_embeddings)))  # [bsz*len, attention-unit]
         alphas = self.ws2(hbar).view(size[0], size[1], -1)  # [bsz, len, hop]
         alphas = torch.transpose(alphas, 1, 2).contiguous()  # [bsz, hop, len]
-        alphas = self.softmax(alphas.view(-1, size[1]))  # [bsz*hop, len]
+        alphas = F.softmax(alphas.view(-1, size[1]), dim=1)  # [bsz*hop, len] #--> self.softmax(alphas.view(-1, size[1]))
         alphas = alphas.view(size[0], self.attention_hops, size[1])  # [bsz, hop, len]
         return torch.bmm(alphas, outp) #bsz,hop,nhid
 
@@ -95,5 +96,3 @@ class MMD_NCA_Net(nn.Module):
 
     def forward(self, x):
         return self.A_LSTM(x)
-
-
