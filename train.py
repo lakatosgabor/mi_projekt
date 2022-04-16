@@ -11,9 +11,22 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import json
 from human_motion_analysis_with_gru import MMD_NCA_Net
+import time
+import matplotlib.pyplot as plt
 
-num_epochs = 5 #-->50000
+#eszkoz infók
+'''
+print(torch.cuda.is_available())
+print(torch.cuda.current_device())
+print(torch.cuda.get_device_name(0))
+print(torch.cuda.memory_allocated())
+print(torch.cuda.memory_cached())   #ez elvileg kell futtatás előtt, de még nem tudom, h miért
+'''
+
+num_epochs = 1000 #50000
 learning_rate = 0.0001
+loss_total_array = []
+epochs_array = []
 
 use_cuda = torch.cuda.is_available()
 
@@ -232,7 +245,7 @@ class MMD_NCA_Dataset(Dataset):
         return len(self.training_MMD_NCA_Groups)
 
 
-def train(model, train_loader, myloss, optimizer, epoch):
+def train(model, train_loader, myloss, optimizer, epoch, epochs_array, loss_total_array):
     model.train()
     for batch_idx, train_data in enumerate(train_loader):
         train_data = Variable(train_data).type(torch.cuda.DoubleTensor).squeeze().view(175, 50, 34).permute(1, 0, 2)
@@ -243,9 +256,12 @@ def train(model, train_loader, myloss, optimizer, epoch):
         loss.backward()
         optimizer.step()
         if batch_idx % 100 == 0:
+            epochs_array.append(epoch)
+            loss_total_array.append(10000. * loss.data.cpu().numpy())
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tloss: {:.6f}'.format(
                 epoch, batch_idx * len(train_data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), 10000. * loss.data.cpu().numpy()))
+
         return loss
 
 
@@ -254,6 +270,12 @@ def save_models(epoch):
 
 
 model = MMD_NCA_Net().cuda().double()
+#print(model.parameters)
+#print(next(model.parameters()).is_cuda)
+
+#for i in model.parameters():
+#    print(i)
+
 criterion = MMD_NCA_loss()
 # generate training data
 train_data = MMD_NCA_Dataset('./dataset/GIT_zizi.json', 1)
@@ -262,11 +284,20 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 loss_total = 0.
 
+
 for epoch in range(num_epochs):
-    loss = train(model, train_loader, criterion, optimizer, epoch)
+    loss = train(model, train_loader, criterion, optimizer, epoch, epochs_array, loss_total_array)
     loss_total += loss.data.cpu().numpy()
-    if (epoch+1)%0.2 == 0:  #0.2 helyett 2000 volt
+
+    if (epoch+1)%2 == 0:  #0.2 helyett 2000 volt
         print('loss mean after {} epochs: {}'.format((epoch+1), loss_total / 2000))
         loss_total = 0.
-    if (epoch+1)%0.5 == 0: #0.5 helyett 5000 volt
+    if (epoch+1)%5 == 0: #0.5 helyett 5000 volt
         save_models(epoch)
+
+
+
+plt.plot(epochs_array, loss_total_array)
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.show()
