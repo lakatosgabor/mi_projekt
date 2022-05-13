@@ -43,11 +43,13 @@ class SelfAttentiveEncoder(nn.Module):
 
 class A_LSTM(nn.Module):
     def __init__(self):
+
         super(A_LSTM, self).__init__()
+
         # input size?
 #         self.lnlstm = LNLSTM(30,64,2)#input,output,layer num_layers=1
         self.gru = nn.GRU(input_size=34, hidden_size=128,num_layers=2,bidirectional=True)
-        self.bn1 = nn.BatchNorm1d(50)
+        self.bn1 = nn.BatchNorm1d(34)
         #self.selfattention = SelfAttention(128)
         # fix attention output size to 25
         self.selfattention = SelfAttentiveEncoder()
@@ -60,8 +62,10 @@ class A_LSTM(nn.Module):
         self.fc3 = nn.Linear(320, 128)
         self.bn4 = nn.BatchNorm1d(128)
         self.bn5 = nn.BatchNorm1d(34)
-        
+
     def forward(self, x):#input should be length,bsz,30
+        print(x.shape)
+
         length,bsz,feature = x.shape
         x = x.contiguous().view(-1,feature)
         x = self.bn5(x)
@@ -87,7 +91,7 @@ class A_LSTM(nn.Module):
         x = F.relu(self.fc3(x))
         x = self.bn4(x)
         l2_norm = torch.norm(x,p=2,dim=1)#bsz
-        return l2_norm 
+        return l2_norm
 
 class MMD_NCA_Net(nn.Module):
     def __init__(self):
