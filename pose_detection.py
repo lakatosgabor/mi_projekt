@@ -81,11 +81,27 @@ with mp_pose.Pose(
         mp_pose.POSE_CONNECTIONS,
         landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
 
+    for i in range (32):
+        if (mp_pose.PoseLandmark(i).name):
+            # Data to be written
+            coordinates_to_json ={
+                "name" : mp_pose.PoseLandmark(i).name,
+                "x" : results.pose_landmarks.landmark[mp_pose.PoseLandmark(i).value].x,
+                "y" : results.pose_landmarks.landmark[mp_pose.PoseLandmark(i).value].y,
+                "z" : results.pose_landmarks.landmark[mp_pose.PoseLandmark(i).value].z,
+                "v" : results.pose_landmarks.landmark[mp_pose.PoseLandmark(i).value].visibility
+            }
+            # Serializing json
+            json_object = json.dumps(coordinates_to_json, indent = 5)
 
+            # Writing to data.json
+            with open("data.json", "a") as outfile:
+                outfile.write(json_object)
 
     # Flip the image horizontally for a selfie-view display.
     cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
-    if cv2.waitKey(5) & 0xFF == 27:
-      break
+    # press `q` to exit
+    if cv2.waitKey(27) & 0xFF == ord('q'):
+        break
 cap.release()
 
